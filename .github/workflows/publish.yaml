@@ -1,0 +1,85 @@
+name: Publish VS Code Extension to Marketplaces
+
+on:
+  workflow_dispatch:
+    inputs:
+      ready_to_go:
+        type: boolean
+        required: true
+        description: |
+          The changelog and version are up-to-date for the VS Code extension! 🚀
+
+permissions:
+  contents: read
+
+jobs:
+  # Package once; every job below publishes this same VSIX
+  package:
+    if: ${{ inputs.ready_to_go }}
+    uses: ./.github/workflows/build.yaml
+
+  publish-vscode-marketplace:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      # For the repo's pinned @vscode/vsce
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package.outputs.artifact-name }}
+          path: dist
+
+      - name: Publish to Visual Studio Marketplace
+        working-directory: apps/vscode
+        env:
+          VSCE_PAT: ${{ secrets.VS_MARKETPLACE_TOKEN }}
+          EXTENSION_FILE: ${{ github.workspace }}/dist/${{ needs.package.outputs.vsix-name }}
+        run: npx --no vsce publish --packagePath "$EXTENSION_FILE" --skip-duplicate
+
+  publish-open-vsx:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      # For the repo's pinned ovsx
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package.outputs.artifact-name }}
+          path: dist
+
+      - name: Publish to Open VSX Registry
+        working-directory: apps/vscode
+        env:
+          OVSX_PAT: ${{ secrets.OPEN_VSX_TOKEN }}
+          EXTENSION_FILE: ${{ github.workspace }}/dist/${{ needs.package.outputs.vsix-name }}
+        run: npx --no ovsx publish "$EXTENSION_FILE" --skip-duplicate
+
+  github-release:
+    needs:
+      - package
+      - publish-vscode-marketplace
+      - publish-open-vsx
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package.outputs.artifact-name }}
+          path: dist
+
+      - name: Publish GH release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VSC extension - v${{ needs.package.outputs.version }}
+          tag_name: v${{ needs.package.outputs.version }}-vsix
+          fail_on_unmatched_files: true
+          files: dist/${{ needs.package.outputs.vsix-name }}

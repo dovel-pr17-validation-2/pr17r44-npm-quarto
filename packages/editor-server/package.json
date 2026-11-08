@@ -1,0 +1,34 @@
+{
+  "name": "editor-server",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@mathjax/mathjax-mhchem-font-extension": "^4.1.3",
+    "@mathjax/mathjax-tex-font": "^4.1.3",
+    "@mathjax/src": "^4.1.3",
+    "core": "*",
+    "core-node": "*",
+    "editor-types": "*",
+    "node-sqlite3-wasm": "^0.8.61",
+    "quarto-core": "*",
+    "tmp": "^0.2.7",
+    "tsconfig": "*",
+    "vscode-languageserver-types": "^3.18.5",
+    "vscode-uri": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/tmp": "^0.2.6",
+    "eslint": "^10.13.0",
+    "eslint-config-custom-server": "*",
+    "tsx": "^4.23.15",
+    "vscode-languageserver": "^11.0.0"
+  },
+  "scripts": {
+    "test": "node --import tsx --test test/*.test.ts",
+    "lint": "eslint src"
+  }
+}

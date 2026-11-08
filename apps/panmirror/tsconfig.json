@@ -1,0 +1,10 @@
+{
+  "extends": "tsconfig/base.json",
+  "include": ["./src", "../../packages/editor/src/@types"],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "target": "ES2019",
+    "lib": ["ES2019", "ES2022.String"],
+    "jsx": "react-jsx"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "quarto-vscode-markdownit",
+  "version": "0.0.1",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js"
+    }
+  },
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "dev": "tsc --noEmit && vite build --mode=development",
+    "lint": "eslint src test",
+    "test": "node --import tsx --test test/*.test.ts",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+  },
+  "dependencies": {
+    "core": "*",
+    "markdown-it": "^15.0.3",
+    "markdown-it-attrs": "^4.5.0",
+    "markdown-it-deflist": "^4.0.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-sub": "^2.0.0",
+    "markdown-it-sup": "^2.0.0",
+    "markdown-it-task-lists": "^2.1.1",
+    "mermaid": "~11.17.2",
+    "wcwidth": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode-notebook-renderer": "^1.72.4",
+    "@types/wcwidth": "^1.0.2",
+    "eslint": "^10.13.0",
+    "eslint-config-custom": "*",
+    "tsconfig": "*",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.5",
+    "vite-plugin-static-copy": "^4.1.1"
+  }
+}

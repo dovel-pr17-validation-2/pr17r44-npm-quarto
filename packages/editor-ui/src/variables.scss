@@ -1,0 +1,29 @@
+/*
+ * variables.scss
+ *
+ * Copyright (C) 2022-2026 by Posit Software, PBC
+ */
+
+
+ $navbarHeight: 30px;
+ $toolbarHeight: 32px;
+
+ $sideGutterWidth: 42px;
+ $sideGutterNarrowWidth: 22px;
+ $sideGutterTopMargin: 12px;
+ 
+ $sidebarWidth: 170px;
+ $sidebarBottomBorderRadius: 10px;
+ $sidebarTransitionTime: 300ms;
+ 
+ $backgroundColor: white;
+ $editorBackgroundColor: white;
+
+ $paneBorderColor: rgb(218, 220, 224);
+ $paneBorder: 1px solid $paneBorderColor;
+ 
+ $paneBoxShadowColor: rgba(60, 64, 67, 0.15);
+ $paneBoxShadow: 0 1px 3px 1px $paneBoxShadowColor;
+
+ $zIndexOverlay: 20;
+ 

@@ -1,0 +1,107 @@
+/*
+ * EditorOutlineSidebar.module.scss
+ *
+ * Copyright (C) 2022-2026 by Posit Software, PBC
+ */
+
+@use 'editor-ui/src/variables' as *;
+
+$verticalPadding: 1px;
+$buttonOpacity: 0.6;
+
+.outline {
+  position: absolute;
+  left: 0;
+  top: $verticalPadding;
+  bottom: $verticalPadding;
+  width: 0;
+  font-size: 0.9em;
+  color: gray;
+  border-right: $paneBorder;
+  z-index: $zIndexOverlay;
+  display: none;
+
+}
+
+.outlineVisible {
+  width: $sidebarWidth;
+  display: flex;
+  flex-direction: column;
+}
+
+.outlineHeader {
+  display: inline-flex;
+  width: 100%;
+  padding: 9px 12px;
+  padding-bottom: 5px;
+  padding-right: 7px;
+  flex: 0 1 auto;
+}
+
+
+.outlineHeaderToggle {
+  cursor: pointer;
+  opacity: $buttonOpacity;
+  padding: 0 !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+}
+
+.outlineHeaderText {
+  visibility: hidden;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.outlineCloseIcon {
+  visibility: hidden;
+  margin-left: auto !important;
+  padding-right: 20px !important;
+  cursor: pointer;
+  opacity: $buttonOpacity;
+}
+
+.outlineVisible .outlineHeaderText,
+.outlineVisible .outlineCloseIcon {
+  visibility: visible;
+}
+
+
+.outlineTreeContainer {
+  flex: 1 1 auto;
+  overflow-y: scroll;
+}
+
+.outlineTree {
+  padding: 5px 0;
+}
+
+
+.showOutlineButtonGutter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: $sideGutterWidth;
+}
+
+
+.showOutlineButton {
+  position: absolute;
+  left: 6px;
+  top: calc(#{$verticalPadding} + 8px);
+  z-index:  $zIndexOverlay;
+  background-color: transparent!important;
+  padding: 0 !important;
+  opacity: $buttonOpacity;
+}
+
+.showOutlineButton {
+  min-height: 34px !important;
+  max-height: 34px !important;
+}
+
+.outlineEmpty {
+  padding: 18px 18px;
+}
+

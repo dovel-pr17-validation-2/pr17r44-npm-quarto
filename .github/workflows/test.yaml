@@ -1,0 +1,63 @@
+name: Test VS Code Extension
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      - name: Run linters
+        run: npm run lint
+
+  test-packages:
+    runs-on: ubuntu-latest
+    name: Test packages
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      - name: Run package tests
+        run: npm run test-packages
+
+  test-extension:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        quarto: [release, pre-release]
+    name: Test (Quarto ${{ matrix.quarto }})
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Update build environment and install XVFB
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install --fix-missing xvfb
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: ${{ matrix.quarto }}
+      - name: Build vscode extension
+        run: |
+          npm ci
+          npm run build-vscode
+      - name: Compile and run tests
+        env:
+          QUARTO_CHANNEL: ${{ matrix.quarto }}
+        run: xvfb-run npm run test-vscode

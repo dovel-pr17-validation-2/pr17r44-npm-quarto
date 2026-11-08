@@ -1,0 +1,72 @@
+/*
+ * EditorFind.module.scss
+ *
+ * Copyright (C) 2022-2026 by Posit Software, PBC
+ */
+
+@use '../variables' as *;
+
+$findHeight: 160px;
+$findWidth: 270px;
+$rightPadding: 20px;
+
+.findContainer {
+  display: none;
+  position: absolute;
+  z-index: $zIndexOverlay;
+  right: $rightPadding;
+  top: -1px;
+  height: 0;
+  width: calc(#{$findWidth} - #{$rightPadding});
+}
+.find {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  padding: 10px;
+  padding-top: 13px;
+  overflow: hidden;
+  border-top: none;
+  border-bottom-right-radius: $sidebarBottomBorderRadius;
+  border-bottom-left-radius: $sidebarBottomBorderRadius;
+}
+
+
+.findRow {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+/* transition */
+
+.enter {
+  height: 0;
+  display: initial;
+}
+
+.enterActive {
+  height: $findHeight;
+  transition: height $sidebarTransitionTime;
+}
+
+.enterDone {
+  height: $findHeight;
+  display: initial;
+}
+
+.exit {
+  height: $findHeight;
+  display: initial;
+}
+
+.exitActive {
+  height: 0;
+  transition: height $sidebarTransitionTime;
+}
+
+.exitDone {
+  height: 0;
+  display: none;
+}

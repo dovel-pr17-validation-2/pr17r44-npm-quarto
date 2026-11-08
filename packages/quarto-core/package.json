@@ -1,0 +1,28 @@
+{
+  "name": "quarto-core",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "core": "*",
+    "core-node": "*",
+    "markdown-it": "^15.0.3",
+    "markdown-it-attrs": "^4.5.0",
+    "semver": "^7.8.5",
+    "tsconfig": "*",
+    "vscode-languageserver-types": "^3.18.5",
+    "vscode-uri": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/semver": "^7.8.0",
+    "eslint": "^10.13.0",
+    "eslint-config-custom-server": "*",
+    "tsx": "^4.23.15"
+  },
+  "scripts": {
+    "lint": "eslint src test",
+    "test": "node --import tsx --test test/*.test.ts"
+  }
+}

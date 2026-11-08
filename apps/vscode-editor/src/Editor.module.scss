@@ -1,0 +1,36 @@
+/*
+ * Editor.module.scss
+ *
+ * Copyright (C) 2022-2026 by Posit Software, PBC
+ */
+
+@use 'editor-ui/src/variables' as *;
+ 
+$editorToolbarHeight: 32px;
+
+.editorParent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+} 
+
+.editorToolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: $editorToolbarHeight;
+  height: $editorToolbarHeight;
+  padding-top: 2px;
+  padding-bottom: 3px;
+}
+
+.editorFrame {
+  position: absolute;
+  top: calc(#{$editorToolbarHeight} - 4px);
+  left: 0;
+  right: 0;
+  bottom: 0;
+}

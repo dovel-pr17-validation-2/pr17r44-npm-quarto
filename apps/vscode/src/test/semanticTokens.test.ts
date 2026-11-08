@@ -1,0 +1,248 @@
+import * as vscode from "vscode";
+import * as assert from "assert";
+import { decodeSemanticTokens, embeddedSemanticTokensProvider, encodeSemanticTokens, remapTokenIndices } from "../providers/semantic-tokens";
+import { unadjustedSemanticTokens } from "../vdoc/vdoc";
+import { embeddedLanguage } from "../vdoc/languages";
+import { MarkdownEngine } from "../markdown/engine";
+import { QUARTO_SEMANTIC_TOKEN_LEGEND } from "quarto-utils";
+import { openAndShowExamplesTextDocument } from "./test-utils";
+
+suite("Semantic Tokens", function () {
+
+  test("Encode and decode semantic tokens roundtrip", function () {
+    // Create a set of semantic tokens in absolute format
+    const tokens = [
+      { line: 0, startChar: 0, length: 3, tokenType: 1, tokenModifiers: 0 },
+      { line: 0, startChar: 4, length: 4, tokenType: 2, tokenModifiers: 1 },
+      { line: 2, startChar: 2, length: 5, tokenType: 3, tokenModifiers: 2 },
+    ];
+
+    // Encode to delta format
+    const encoded = encodeSemanticTokens(tokens);
+
+    // Verify the encoded data has the expected structure
+    assert.ok(encoded.data, "Encoded tokens should have data property");
+    assert.strictEqual(encoded.data.length, 15, "Encoded data should have 15 elements (3 tokens x 5 fields)");
+
+    // Decode back to absolute format
+    const decoded = decodeSemanticTokens(encoded);
+
+    // Verify roundtrip produces original tokens
+    assert.deepStrictEqual(decoded, tokens, "Decoded tokens should match original tokens");
+  });
+
+  test("Decode semantic tokens with delta encoding", function () {
+    // Create semantic tokens in delta-encoded format
+    // Format: [deltaLine, deltaStartChar, length, tokenType, tokenModifiers, ...]
+    const deltaEncoded: vscode.SemanticTokens = {
+      data: new Uint32Array([
+        0, 5, 3, 1, 0,    // line 0, char 5, length 3
+        0, 4, 4, 2, 1,    // line 0 (0+0), char 9 (5+4), length 4
+        2, 0, 5, 3, 2,    // line 2 (0+2), char 0 (reset), length 5
+      ]),
+      resultId: undefined
+    };
+
+    const decoded = decodeSemanticTokens(deltaEncoded);
+
+    // Verify the decoded tokens have correct absolute positions
+    assert.strictEqual(decoded.length, 3, "Should decode 3 tokens");
+    assert.deepStrictEqual(decoded[0], { line: 0, startChar: 5, length: 3, tokenType: 1, tokenModifiers: 0 });
+    assert.deepStrictEqual(decoded[1], { line: 0, startChar: 9, length: 4, tokenType: 2, tokenModifiers: 1 });
+    assert.deepStrictEqual(decoded[2], { line: 2, startChar: 0, length: 5, tokenType: 3, tokenModifiers: 2 });
+  });
+
+  test("Legend mapping remaps matching token types", function () {
+    // Source legend has types at different indices than target
+    const sourceLegend = {
+      tokenTypes: ["class", "function", "variable"],
+      tokenModifiers: ["readonly", "static"]
+    };
+
+    const targetLegend = {
+      tokenTypes: ["variable", "function", "class"], // Different order
+      tokenModifiers: ["static", "readonly"] // Different order
+    };
+
+    // Create tokens using source indices
+    const sourceTokens = encodeSemanticTokens([
+      { line: 0, startChar: 0, length: 3, tokenType: 0, tokenModifiers: 0 }, // "class" in source
+      { line: 1, startChar: 0, length: 4, tokenType: 1, tokenModifiers: 0 }, // "function" in source
+      { line: 2, startChar: 0, length: 5, tokenType: 2, tokenModifiers: 0 }, // "variable" in source
+    ]);
+
+    // Remap to target legend
+    const remapped = remapTokenIndices(sourceTokens, sourceLegend, targetLegend);
+    const decoded = decodeSemanticTokens(remapped);
+
+    // Verify types were remapped to target indices
+    assert.strictEqual(decoded.length, 3, "Should have 3 tokens");
+    assert.strictEqual(decoded[0].tokenType, 2, "class should map to index 2 in target");
+    assert.strictEqual(decoded[1].tokenType, 1, "function should map to index 1 in target");
+    assert.strictEqual(decoded[2].tokenType, 0, "variable should map to index 0 in target");
+  });
+
+  test("Legend mapping filters out unmapped token types", function () {
+    // Source legend has types that don't exist in target
+    const sourceLegend = {
+      tokenTypes: ["class", "customType", "function", "anotherCustomType"],
+      tokenModifiers: []
+    };
+
+    const targetLegend = {
+      tokenTypes: ["class", "function"], // Only has class and function
+      tokenModifiers: []
+    };
+
+    // Create tokens including unmapped types
+    const sourceTokens = encodeSemanticTokens([
+      { line: 0, startChar: 0, length: 3, tokenType: 0, tokenModifiers: 0 }, // "class" - should be kept
+      { line: 1, startChar: 0, length: 4, tokenType: 1, tokenModifiers: 0 }, // "customType" - should be filtered
+      { line: 2, startChar: 0, length: 5, tokenType: 2, tokenModifiers: 0 }, // "function" - should be kept
+      { line: 3, startChar: 0, length: 6, tokenType: 3, tokenModifiers: 0 }, // "anotherCustomType" - should be filtered
+    ]);
+
+    // Remap to target legend
+    const remapped = remapTokenIndices(sourceTokens, sourceLegend, targetLegend);
+    const decoded = decodeSemanticTokens(remapped);
+
+    // Verify unmapped types were filtered out
+    assert.strictEqual(decoded.length, 2, "Should have 2 tokens after filtering");
+    assert.strictEqual(decoded[0].tokenType, 0, "class should map to index 0");
+    assert.strictEqual(decoded[0].line, 0, "First token should be from line 0");
+    assert.strictEqual(decoded[1].tokenType, 1, "function should map to index 1");
+    assert.strictEqual(decoded[1].line, 2, "Second token should be from line 2");
+  });
+
+  test("Legend mapping remaps modifier bitfields correctly", function () {
+    // Source and target have modifiers in different positions
+    const sourceLegend = {
+      tokenTypes: ["function"],
+      tokenModifiers: ["readonly", "static", "async"] // indices 0, 1, 2
+    };
+
+    const targetLegend = {
+      tokenTypes: ["function"],
+      tokenModifiers: ["async", "readonly", "static"] // indices 0, 1, 2 (reordered)
+    };
+
+    // Create token with multiple modifiers set
+    // In source: readonly=bit 0, static=bit 1, async=bit 2
+    const modifierBits = (1 << 0) | (1 << 1); // readonly + static in source
+    const sourceTokens = encodeSemanticTokens([
+      { line: 0, startChar: 0, length: 3, tokenType: 0, tokenModifiers: modifierBits }
+    ]);
+
+    // Remap to target legend
+    const remapped = remapTokenIndices(sourceTokens, sourceLegend, targetLegend);
+    const decoded = decodeSemanticTokens(remapped);
+
+    // In target: async=bit 0, readonly=bit 1, static=bit 2
+    const expectedModifiers = (1 << 1) | (1 << 2); // readonly + static in target
+    assert.strictEqual(decoded[0].tokenModifiers, expectedModifiers, "Modifiers should be remapped to target positions");
+  });
+
+  test("Legend mapping handles modifiers not in target legend", function () {
+    // Source has modifiers that don't exist in target
+    const sourceLegend = {
+      tokenTypes: ["function"],
+      tokenModifiers: ["readonly", "customModifier", "static"]
+    };
+
+    const targetLegend = {
+      tokenTypes: ["function"],
+      tokenModifiers: ["readonly", "static"] // Missing "customModifier"
+    };
+
+    // Set all three modifiers in source
+    const modifierBits = (1 << 0) | (1 << 1) | (1 << 2); // all three modifiers
+    const sourceTokens = encodeSemanticTokens([
+      { line: 0, startChar: 0, length: 3, tokenType: 0, tokenModifiers: modifierBits }
+    ]);
+
+    // Remap to target legend
+    const remapped = remapTokenIndices(sourceTokens, sourceLegend, targetLegend);
+    const decoded = decodeSemanticTokens(remapped);
+
+    // Only readonly and static should be mapped; customModifier should be dropped
+    const expectedModifiers = (1 << 0) | (1 << 1); // readonly + static in target
+    assert.strictEqual(decoded[0].tokenModifiers, expectedModifiers, "Unmapped modifiers should be filtered out");
+  });
+
+  test("Unadjusting semantic tokens drops tokens outside code lines", function () {
+    // Python injects 2 lines at the top of the virtual doc
+    const python = embeddedLanguage("python")!;
+
+    // Virtual doc coordinates: lines 0-1 are injected, line 2 (real line 0) is a
+    // `#` filler line, and line 4 (real line 2) is code
+    const vdocTokens = encodeSemanticTokens([
+      { line: 0, startChar: 0, length: 14, tokenType: 0, tokenModifiers: 0 }, // injected
+      { line: 2, startChar: 0, length: 1, tokenType: 0, tokenModifiers: 0 },  // filler `#`
+      { line: 4, startChar: 0, length: 1, tokenType: 1, tokenModifiers: 0 },  // code
+      { line: 4, startChar: 4, length: 3, tokenType: 2, tokenModifiers: 0 },  // code
+    ]);
+
+    const decoded = decodeSemanticTokens(unadjustedSemanticTokens(python, vdocTokens, new Set([2])));
+
+    assert.deepStrictEqual(decoded, [
+      { line: 2, startChar: 0, length: 1, tokenType: 1, tokenModifiers: 0 },
+      { line: 2, startChar: 4, length: 3, tokenType: 2, tokenModifiers: 0 },
+    ]);
+  });
+
+  suite("Embedded semantic tokens provider", function () {
+    let registration: vscode.Disposable;
+
+    suiteSetup(function () {
+      // Fake python provider: a comment token at column 0 of every non-empty
+      // line of the virtual doc, including its `#` filler lines (#985)
+      const legend = new vscode.SemanticTokensLegend(["comment"]);
+      registration = vscode.languages.registerDocumentSemanticTokensProvider(
+        { language: "python" },
+        {
+          provideDocumentSemanticTokens(document) {
+            const builder = new vscode.SemanticTokensBuilder(legend);
+            for (let line = 0; line < document.lineCount; line++) {
+              if (document.lineAt(line).text.trim() !== "") {
+                builder.push(line, 0, 1, 0, 0);
+              }
+            }
+            return builder.build();
+          }
+        },
+        legend
+      );
+    });
+
+    suiteTeardown(async function () {
+      registration.dispose();
+      await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+    });
+
+    /** Lines of `fileName` with a semantic token, with the cursor on `cursorLine` */
+    async function tokenLines(fileName: string, cursorLine: number) {
+      const { doc, editor } = await openAndShowExamplesTextDocument(fileName);
+      editor.selection = new vscode.Selection(cursorLine, 0, cursorLine, 0);
+
+      const provide = embeddedSemanticTokensProvider(new MarkdownEngine());
+      const tokens = await provide(doc, new vscode.CancellationTokenSource().token, async () => undefined);
+      assert.ok(tokens, "Provider should return tokens");
+
+      const decoded = decodeSemanticTokens(tokens);
+      const comment = QUARTO_SEMANTIC_TOKEN_LEGEND.tokenTypes.indexOf("comment");
+      assert.ok(decoded.every(t => t.tokenType === comment), "Tokens should be remapped to the Quarto legend");
+      return decoded.map(t => t.line);
+    }
+
+    test("Tokens only on code lines of the cells of the language", async function () {
+      // Not on YAML, heading, prose, fences, or the R cell
+      assert.deepStrictEqual(await tokenLines("semantic-tokens.qmd", 10), [9, 10, 16, 17]);
+    });
+
+    test("No tokens on IPython magic lines", async function () {
+      // `%`, `%%` and `!` lines are `#` filler in the virtual doc
+      assert.deepStrictEqual(await tokenLines("vdoc/magics.qmd", 8), [8, 14]);
+    });
+  });
+
+});

@@ -1,0 +1,45 @@
+/*
+ * Editor.module.scss
+ *
+ * Copyright (C) 2019-2026 by Posit Software, PBC
+ */
+
+ @use '../variables' as *;
+
+.editorLoadError {
+  display: none;
+}
+
+.editorLoadingSpinner {
+  margin-top: 200px;
+}
+
+:global {
+  .ProseMirror {
+    position: absolute;
+    width: initial;
+    height: initial;
+    top: 0;
+    left: calc(#{$sideGutterWidth} - #{$sideGutterNarrowWidth});
+    right: 0;
+    bottom: 0;
+  }
+  .pm-editing-root-node {
+    padding-left: $sideGutterWidth;
+    padding-right:  $sideGutterWidth;
+  }
+}
+
+
+.outlineVisible {
+  :global {
+    .ProseMirror {
+      left: calc(#{$sidebarWidth});
+    }
+    .pm-editing-root-node {
+      padding-left: $sideGutterNarrowWidth;
+      padding-right: $sideGutterNarrowWidth;;
+    }
+  }
+}
+

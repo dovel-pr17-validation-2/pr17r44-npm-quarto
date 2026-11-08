@@ -1,0 +1,23 @@
+.DS_Store
+node_modules
+.turbo
+*.log
+dist
+dist-*
+*.local
+.env
+.cache
+server/dist
+public/dist
+.Rproj.user
+.Rhistory
+*.Rproj
+.luarc.json
+.ipynb_checkpoints
+/.luarc.json
+.vscode-test
+.positron-test
+*.vsix
+*.timestamp-*.mjs
+# roborev snapshots
+/.roborev/

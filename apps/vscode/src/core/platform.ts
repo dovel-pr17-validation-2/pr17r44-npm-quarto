@@ -1,0 +1,88 @@
+/*
+ * platform.ts
+ *
+ * Copyright (C) 2022-2026 by Posit Software, PBC
+ */
+
+import * as child_process from "child_process";
+
+export function isWindows() {
+  return process.platform === "win32";
+}
+
+export function isRStudioWorkbench() {
+  // RS_SERVER_URL e.g. https://daily-rsw.soleng.rstudioservices.com/
+  // RS_SESSION_URL e.g. /s/eae053c9ab5a71168ee19/
+  return process.env.RS_SERVER_URL && process.env.RS_SESSION_URL;
+}
+
+
+export function gitHubCodespaceName() {
+  return process.env.CODESPACE_NAME;
+}
+
+export function gitHubCodespacePortForwardingDomain() {
+  return process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
+}
+
+export function isGitHubCodespaces() {
+  return !!gitHubCodespacePortForwardingDomain() && !!gitHubCodespaceName();
+}
+
+export function gitHubCodeSpacesProxyUri() {
+  const CODESPACE_NAME = gitHubCodespaceName();
+  const GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN =
+    gitHubCodespacePortForwardingDomain();
+  if (CODESPACE_NAME && GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN) {
+    return `https://${CODESPACE_NAME}-{{port}}.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`;
+  } else {
+    return undefined;
+  }
+}
+
+export function isVSCodeServer() {
+  return !!vsCodeServerProxyUri();
+}
+
+export function vsCodeServerProxyUri() {
+  return process.env.VSCODE_PROXY_URI;
+}
+
+export function vsCodeWebUrl(serverUrl: string) {
+  // transform if this is a localhost url
+  const url = new URL(serverUrl);
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+    const port = url.port;
+    if (isRStudioWorkbench()) {
+      return rswURL(port);
+    } else if (isVSCodeServer()) {
+      return vsCodeServerProxyUri()!.replace("{{port}}", `${port}`);
+    }
+  }
+  // default to reflecting back serverUrl
+  return serverUrl;
+
+}
+
+export function rswURL(port: string) {
+  const server = process.env.RS_SERVER_URL!;
+  const session = process.env.RS_SESSION_URL!;
+  const portToken = rswPortToken(port);
+  const url = `${server}${session.slice(1)}p/${portToken}/`;
+  return url;
+}
+
+function rswPortToken(port: string) {
+  try {
+    const result = child_process.execFileSync(
+      "/usr/lib/rstudio-server/bin/rserver-url",
+      [port],
+      {
+        encoding: "utf-8",
+      }
+    ) as unknown as string;
+    return result;
+  } catch {
+    throw new Error(`Failed to map RSW port token`);
+  }
+}
