@@ -6,9 +6,9 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
-    "@fluentui/react-components": "^9.75.0",
-    "@fluentui/react-icons": "^2.0.344",
-    "@reduxjs/toolkit": "^2.13.0",
+    "@fluentui/react-components": "^9.75.2",
+    "@fluentui/react-icons": "^2.0.346",
+    "@reduxjs/toolkit": "^2.14.0",
     "core": "*",
     "core-browser": "*",
     "editor": "*",
@@ -29,7 +29,7 @@
     "@types/react-dom": "^19.3.0",
     "@types/react-transition-group": "^4.4.12",
     "@types/typo-js": "^1.2.2",
-    "eslint": "^10.13.0",
+    "eslint": "^10.15.0",
     "eslint-config-custom": "*",
     "tsconfig": "*"
   },
